@@ -1,0 +1,38 @@
+name: Auto Renew with Playwright
+
+on:
+  schedule:
+    - cron: "0 0 * * *"   # 每天 UTC 0:00（北京时间 8:00）
+  workflow_dispatch:      # 支持手动触发
+
+jobs:
+  renew:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install playwright
+          playwright install chromium
+
+      - name: Run renew script
+        env:
+          PIXELFORGE_EMAIL: ${{ secrets.PIXELFORGE_EMAIL }}
+          PIXELFORGE_PASSWORD: ${{ secrets.PIXELFORGE_PASSWORD }}
+          # 如果服务器链接不同，可以在脚本中修改或通过环境变量传入
+        run: python renew_playwright.py
+
+      - name: Upload debug screenshot
+        if: always()  # 无论成功失败都上传截图
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshot
+          path: |
+            server_page.png
+            error_screenshot.png
